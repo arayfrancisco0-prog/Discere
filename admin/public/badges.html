@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Badges - Admin Discere</title><link rel="stylesheet" href="/css/admin.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Discere Admin</div>
+    <nav class="sidebar-nav">
+      <a href="/">📊 Dashboard</a>
+      <a href="/users.html">👥 Usuários</a>
+      <a href="/courses.html">📚 Cursos</a>
+      <a href="/categories.html">🏷️ Categorias</a>
+      <a href="/badges.html" class="active">🏆 Badges</a>
+      <a href="/settings.html">⚙️ Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-info" id="admin-info"></div>
+      <button onclick="logout()">🚪 Sair</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header-bar">
+      <div>
+        <h1>Badges</h1>
+        <p>Gerenciar conquistas da plataforma</p>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:24px;">
+      <h3 style="margin-bottom:12px;">Nova Badge</h3>
+      <form id="badge-form" class="inline-form">
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" class="input" id="badge-name" placeholder="Ex: Expert Python" required>
+        </div>
+        <div class="form-group">
+          <label>Slug</label>
+          <input type="text" class="input" id="badge-slug" placeholder="Ex: python-expert" required>
+        </div>
+        <div class="form-group">
+          <label>Descrição</label>
+          <input type="text" class="input" id="badge-desc" placeholder="Descrição da badge">
+        </div>
+        <button type="submit" class="btn btn-accent" style="margin-bottom:2px;">+ Adicionar</button>
+      </form>
+    </div>
+    <div class="table-wrapper" id="badges-table"></div>
+  </main>
+</div>
+<script src="/js/admin.js"></script>
+<script>
+async function loadBadges() {
+  await checkAuth();
+  document.getElementById('admin-info').textContent = `👤 ${adminUser.name}`;
+  const badges = await api('/api/admin-badges');
+  document.getElementById('badges-table').innerHTML = `
+    <table>
+      <thead><tr><th>Nome</th><th>Slug</th><th>Descrição</th><th>Usuários</th></tr></thead>
+      <tbody>${badges.map(b => `
+        <tr>
+          <td>${escapeHtml(b.name)}</td>
+          <td><code>${escapeHtml(b.slug)}</code></td>
+          <td>${escapeHtml(b.description || '-')}</td>
+          <td>${b.user_count || 0}</td>
+        </tr>
+      `).join('')}</tbody>
+    </table>
+  `;
+}
+
+document.getElementById('badge-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await api('/api/admin-badges', { method: 'POST', body: { name: document.getElementById('badge-name').value, slug: document.getElementById('badge-slug').value, description: document.getElementById('badge-desc').value } });
+    toast('Badge criada!', 'success');
+    document.getElementById('badge-name').value = '';
+    document.getElementById('badge-slug').value = '';
+    document.getElementById('badge-desc').value = '';
+    loadBadges();
+  } catch (err) { toast(err.message, 'error'); }
+});
+
+loadBadges();
+</script>
+</body>
+</html>

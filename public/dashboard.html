@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Painel - Discere</title><link rel="stylesheet" href="/css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <div class="sidebar-trigger"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="header-bar">
+      <div>
+        <h1>Meu Painel</h1>
+        <p id="welcome-text">Bem-vindo de volta!</p>
+      </div>
+    </div>
+    <div class="stat-grid" id="stats-grid"></div>
+    <h2 class="section-title">Meus Cursos</h2>
+    <div class="course-grid" id="enrollments-grid" style="min-height:100px;"></div>
+  </main>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+async function loadDashboard() {
+  await checkAuth();
+  if (!currentUser) { window.location.href = '/login.html'; return; }
+  document.getElementById('welcome-text').textContent = `Bem-vindo de volta, ${currentUser.name}!`;
+
+  const sp = currentUser.studentProfile || {};
+  const badgesData = await api('/api/badges').catch(() => []);
+  const badgesCount = badgesData.filter(b => b.earned_at).length;
+  const enrollments = await api('/api/enrollments').catch(() => []);
+  const completed = enrollments.filter(e => e.completed).length;
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="card stat-card"><div class="stat-value">${sp.totalPoints || 0}</div><div class="stat-label">⭐ Pontos Totais</div></div>
+    <div class="card stat-card"><div class="stat-value">${completed}</div><div class="stat-label">🎓 Cursos Concluídos</div></div>
+    <div class="card stat-card"><div class="stat-value">${badgesCount}</div><div class="stat-label">🏆 Conquistas</div></div>
+    <div class="card stat-card"><div class="stat-value">${enrollments.length}</div><div class="stat-label">📚 Matrículas</div></div>
+  `;
+
+  const grid = document.getElementById('enrollments-grid');
+  if (!enrollments.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">📚</div><h3>Nenhum curso ainda</h3><p>Matricule-se em um curso para começar.</p><a href="/courses.html" class="btn btn-primary">Ver Cursos</a></div>`;
+    return;
+  }
+  grid.innerHTML = enrollments.map(e => `
+    <a href="/course.html?slug=${e.course_slug}" class="card course-card" style="text-decoration:none;color:inherit;">
+      <div class="card-body">
+        <h3>${escapeHtml(e.course_title)}</h3>
+        <span class="badge badge-primary">${escapeHtml(e.category_name || '')}</span>
+        ${e.completed ? '<span class="badge badge-accent" style="margin-left:4px;">Concluído</span>' : ''}
+        <p>${escapeHtml(e.short_description || '')}</p>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${e.progress || 0}%;"></div></div>
+      <div class="card-footer"><span>${e.progress || 0}% completo</span></div>
+    </a>
+  `).join('');
+}
+loadDashboard();
+</script>
+</body>
+</html>

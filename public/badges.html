@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Conquistas - Discere</title><link rel="stylesheet" href="/css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <div class="sidebar-trigger"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="header-bar"><div><h1>Conquistas</h1><p>Complete desafios para ganhar badges</p></div></div>
+    <div class="grid grid-4" id="badges-grid"></div>
+  </main>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+async function loadBadges() {
+  await checkAuth();
+  if (!currentUser) { window.location.href = '/login.html'; return; }
+  try {
+    const badges = await api('/api/badges');
+    const badgeIcons = { 'first-login': '🚀', 'first-course': '📚', 'first-exercise': '💻', 'ten-exercises': '🔥', 'course-completed': '🎓', 'python-expert': '🐍', 'javascript-expert': '🟨', 'java-expert': '☕', 'star-student': '⭐' };
+    const grid = document.getElementById('badges-grid');
+    if (!badges.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🏆</div><h3>Nenhuma conquista disponível</h3></div>';
+      return;
+    }
+    grid.innerHTML = badges.map(b => `
+      <div class="card" style="text-align:center;padding:20px;${b.earned_at ? '' : 'opacity:0.4;'}">
+        <div style="font-size:2.5rem;margin-bottom:8px;">${badgeIcons[b.slug] || '🏅'}</div>
+        <div style="font-weight:600;font-size:0.9rem;">${escapeHtml(b.name)}</div>
+        <div style="font-size:0.8rem;color:var(--fg-muted);margin:4px 0;">${escapeHtml(b.description)}</div>
+        <div style="font-size:0.75rem;color:var(--fg-muted);">${b.earned_at ? `✅ Conquistada em ${formatDate(b.earned_at)}` : '🔒 Não conquistada'}</div>
+      </div>
+    `).join('');
+  } catch (err) { toast(err.message, 'error'); }
+}
+loadBadges();
+</script>
+</body>
+</html>

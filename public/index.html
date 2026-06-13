@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Discere - Plataforma de Ensino de Programação</title><link rel="stylesheet" href="/css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">Discere</a>
+    <nav class="nav desktop"><a href="/">Início</a><a href="/courses.html">Cursos</a><div id="auth-area"></div></nav>
+    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    <nav class="nav mobile" id="nav-mobile" style="display:none;"><a href="/">Início</a><a href="/courses.html">Cursos</a><div id="auth-area-mobile"></div></nav>
+  </div>
+</header>
+<main>
+<section class="hero">
+  <h1>Aprenda <span class="gradient-text">Programação</span> de Forma Interativa</h1>
+  <p>Cursos completos com exercícios práticos, gamificação e certificados. Aprenda no seu ritmo, do zero ao avançado.</p>
+  <div class="hero-buttons">
+    <a href="/login.html" class="btn btn-primary btn-lg">Entrar</a>
+    <a href="/register.html" class="btn btn-ghost btn-lg">Criar Conta</a>
+  </div>
+</section>
+<section class="landing-section">
+  <h2>Por que <span class="gradient-text">Discere</span>?</h2>
+  <p class="subtitle">Tudo que você precisa para aprender programação</p>
+  <div class="feature-grid">
+    <div class="card feature-card"><div class="feature-icon">📚</div><h3>Cursos Completos</h3><p>Conteúdo estruturado do básico ao avançado com exemplos práticos</p></div>
+    <div class="card feature-card"><div class="feature-icon">💻</div><h3>Exercícios Práticos</h3><p>Codifique diretamente na plataforma e receba feedback imediato</p></div>
+    <div class="card feature-card"><div class="feature-icon">🎮</div><h3>Gamificação</h3><p>Ganhe pontos, badges e conquistas enquanto aprende</p></div>
+    <div class="card feature-card"><div class="feature-icon">📜</div><h3>Certificados</h3><p>Receba certificados ao concluir cada curso</p></div>
+    <div class="card feature-card"><div class="feature-icon">📊</div><h3>Progresso Visível</h3><p>Acompanhe seu avanço com métricas detalhadas</p></div>
+    <div class="card feature-card"><div class="feature-icon">👥</div><h3>Comunidade Ativa</h3><p>Participe de discussões e tire dúvidas com outros alunos</p></div>
+  </div>
+</section>
+<section class="landing-section alt">
+  <h2>Pronto para começar?</h2>
+  <p class="subtitle" style="margin-bottom:24px;">Junte-se a milhares de alunos e transforme sua carreira</p>
+  <a href="/register.html" class="btn btn-accent btn-lg">Criar Conta Gratuita</a>
+</section>
+</main>
+<footer>
+  <div class="footer-grid">
+    <div><div class="logo" style="font-size:1.3rem;margin-bottom:12px;">Discere</div><p style="font-size:0.85rem;color:var(--fg-muted);">Plataforma de ensino de programação interativa.</p></div>
+    <div><h4>Plataforma</h4><a href="/courses.html">Cursos</a><a href="/badges.html">Conquistas</a></div>
+    <div><h4>Suporte</h4><a href="#">Sobre</a><a href="#">Contato</a></div>
+  </div>
+  <div class="footer-bottom">© 2024 Discere. Todos os direitos reservados.</div>
+</footer>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+checkAuth();
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Curso - Discere</title><link rel="stylesheet" href="/css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <div class="sidebar-trigger"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <header>
+      <div class="header-inner">
+        <a href="/" class="logo">Discere</a>
+        <nav class="nav desktop"><a href="/">Início</a><a href="/courses.html">Cursos</a><div id="auth-area"></div></nav>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        <nav class="nav mobile" id="nav-mobile" style="display:none;"><a href="/">Início</a><a href="/courses.html">Cursos</a><div id="auth-area-mobile"></div></nav>
+      </div>
+    </header>
+    <div id="course-header" style="padding:40px 0;margin-bottom:24px;background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(16,185,129,0.1));"></div>
+    <div style="padding:32px 0 60px;max-width:1200px;">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:300px;"><div id="modules-section"></div></div>
+        <div style="width:300px;flex-shrink:0;"><div class="card" id="sidebar-card"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+let course = null;
+async function loadCourse() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('slug');
+  if (!slug) { window.location.href = '/courses.html'; return; }
+  try {
+    course = await api(`/api/courses/${slug}`);
+    renderCourse();
+  } catch (err) { document.getElementById('course-header').innerHTML = `<div style="max-width:1200px;margin:0 auto;padding:0 20px;"><h2>Curso não encontrado</h2></div>`; }
+}
+function renderCourse() {
+  document.getElementById('course-header').innerHTML = `
+    <div style="max-width:1200px;margin:0 auto;">
+      <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;">
+        <div style="flex:1;min-width:280px;">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            ${courseLevelBadge(course.level)}
+            <span class="badge badge-primary">${escapeHtml(course.category_name || '')}</span>
+          </div>
+          <h1 style="font-size:2rem;margin-bottom:8px;">${escapeHtml(course.title)}</h1>
+          <p style="color:var(--fg-muted);margin-bottom:16px;font-size:1.05rem;">${escapeHtml(course.description)}</p>
+          <div style="display:flex;gap:24px;font-size:0.9rem;color:var(--fg-muted);flex-wrap:wrap;">
+            <span>👨‍🏫 ${escapeHtml(course.teacher_name || '')}</span>
+            <span>📚 ${course.module_count || 0} módulos</span>
+            <span>📖 ${course.lesson_count || 0} aulas</span>
+            <span>💻 ${course.exercise_count || 0} exercícios</span>
+            <span>👥 ${course.enrollment_count || 0} alunos</span>
+            ${course.avg_rating ? `<span>⭐ ${Number(course.avg_rating).toFixed(1)} (${course.rating_count})</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('sidebar-card').innerHTML = `
+    <h3 style="margin-bottom:8px;">${escapeHtml(course.title)}</h3>
+    <div style="font-size:0.85rem;color:var(--fg-muted);margin-bottom:16px;">
+      <div>📚 ${course.modules?.length || 0} módulos</div>
+      <div>📖 ${course.lesson_count || 0} aulas</div>
+      <div>💻 ${course.exercise_count || 0} exercícios</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="enroll()">Começar Curso</button>`;
+  const modulesSection = document.getElementById('modules-section');
+  if (!course.modules?.length) { modulesSection.innerHTML = '<div class="empty-state"><h3>Nenhum módulo disponível</h3></div>'; return; }
+  modulesSection.innerHTML = course.modules.map((mod, mi) => `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleModule(${mi})">
+        <h3 style="font-size:1rem;">${mi + 1}. ${escapeHtml(mod.title)}</h3>
+        <span id="mod-toggle-${mi}" style="transition:transform 0.2s;">▼</span>
+      </div>
+      <div id="mod-body-${mi}" style="display:none;margin-top:12px;">
+        ${mod.lessons?.map((les, li) => `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:500;font-size:0.9rem;">${mi + 1}.${li + 1} ${escapeHtml(les.title)}</div>
+              <div style="font-size:0.8rem;color:var(--fg-muted);">${les.duration || 0}min${les.exercises?.length ? ' · ' + les.exercises.length + ' exercícios' : ''}</div>
+            </div>
+          </div>
+        `).join('') || ''}
+      </div>
+    </div>
+  `).join('');
+}
+function toggleModule(i) {
+  const body = document.getElementById(`mod-body-${i}`);
+  const toggle = document.getElementById(`mod-toggle-${i}`);
+  const isOpen = body.style.display === 'block';
+  body.style.display = isOpen ? 'none' : 'block';
+  toggle.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+async function enroll() {
+  if (!currentUser) { window.location.href = '/login.html'; return; }
+  try { await api('/api/enroll', { method: 'POST', body: { course_id: course.id } }); toast('Matriculado com sucesso!', 'success'); window.location.href = `/course.html?slug=${course.slug}`; }
+  catch (err) { toast(err.message, 'error'); }
+}
+checkAuth();
+loadCourse();
+</script>
+</body>
+</html>

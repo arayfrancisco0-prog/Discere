@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Cursos - Admin Discere</title><link rel="stylesheet" href="/css/admin.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Discere Admin</div>
+    <nav class="sidebar-nav">
+      <a href="/">📊 Dashboard</a>
+      <a href="/users.html">👥 Usuários</a>
+      <a href="/courses.html" class="active">📚 Cursos</a>
+      <a href="/categories.html">🏷️ Categorias</a>
+      <a href="/badges.html">🏆 Badges</a>
+      <a href="/settings.html">⚙️ Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-info" id="admin-info"></div>
+      <button onclick="logout()">🚪 Sair</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header-bar">
+      <div>
+        <h1>Cursos</h1>
+        <p>Gerenciar cursos da plataforma</p>
+      </div>
+    </div>
+    <div class="table-wrapper" id="courses-table"></div>
+  </main>
+</div>
+<script src="/js/admin.js"></script>
+<script>
+async function loadCourses() {
+  await checkAuth();
+  document.getElementById('admin-info').textContent = `👤 ${adminUser.name}`;
+  const courses = await api('/api/admin-courses');
+  document.getElementById('courses-table').innerHTML = `
+    <table>
+      <thead><tr><th>Título</th><th>Categoria</th><th>Professor</th><th>Matrículas</th><th>Status</th><th>Ações</th></tr></thead>
+      <tbody>${courses.map(c => `
+        <tr>
+          <td>${escapeHtml(c.title)}</td>
+          <td><span class="badge badge-primary">${escapeHtml(c.category_name || '-')}</span></td>
+          <td>${escapeHtml(c.teacher_name || '-')}</td>
+          <td>${c.enrollment_count || 0}</td>
+          <td>${c.published ? '<span class="badge badge-accent">Publicado</span>' : '<span class="badge badge-warning">Rascunho</span>'}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="deleteCourse('${c.id}')">Excluir</button></td>
+        </tr>
+      `).join('')}</tbody>
+    </table>
+  `;
+}
+
+async function deleteCourse(id) {
+  if (!confirm('Excluir este curso permanentemente?')) return;
+  try {
+    await api(`/api/admin-courses/${id}`, { method: 'DELETE' });
+    toast('Curso excluído', 'success');
+    loadCourses();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+loadCourses();
+</script>
+</body>
+</html>

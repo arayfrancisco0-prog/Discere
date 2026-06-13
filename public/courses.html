@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Cursos - Discere</title><link rel="stylesheet" href="/css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <div class="sidebar-trigger"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <header>
+      <div class="header-inner">
+        <a href="/" class="logo">Discere</a>
+        <nav class="nav desktop"><a href="/">Início</a><a href="/courses.html">Cursos</a><div id="auth-area"></div></nav>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        <nav class="nav mobile" id="nav-mobile" style="display:none;"><a href="/">Início</a><a href="/courses.html">Cursos</a><div id="auth-area-mobile"></div></nav>
+      </div>
+    </header>
+    <div style="padding:32px 0 60px;max-width:1200px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+        <h1 style="font-size:1.5rem;">Cursos Disponíveis</h1>
+        <input type="text" class="input" id="search" placeholder="Buscar cursos..." style="width:220px;" onkeyup="loadCourses()">
+      </div>
+      <div class="filter-bar" id="category-filters"></div>
+      <div class="filter-bar" id="level-filters">
+        <button class="filter-btn active" data-level="" onclick="setLevel(this)">Todos</button>
+        <button class="filter-btn" data-level="BEGINNER" onclick="setLevel(this)">Iniciante</button>
+        <button class="filter-btn" data-level="INTERMEDIATE" onclick="setLevel(this)">Intermediário</button>
+        <button class="filter-btn" data-level="ADVANCED" onclick="setLevel(this)">Avançado</button>
+      </div>
+      <div class="course-grid" id="courses-grid" style="min-height:200px;"></div>
+    </div>
+  </main>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+let selectedCategory = '';
+let selectedLevel = '';
+async function loadCategories() {
+  try {
+    const cats = await api('/api/categories');
+    const container = document.getElementById('category-filters');
+    container.innerHTML = '<button class="filter-btn active" data-category="" onclick="setCategory(this)">Todas</button>';
+    cats.forEach(c => { container.innerHTML += `<button class="filter-btn" data-category="${c.slug}" onclick="setCategory(this)">${c.name}</button>`; });
+  } catch {}
+}
+function setCategory(el) {
+  document.querySelectorAll('#category-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedCategory = el.dataset.category;
+  loadCourses();
+}
+function setLevel(el) {
+  document.querySelectorAll('#level-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedLevel = el.dataset.level;
+  loadCourses();
+}
+async function loadCourses() {
+  const grid = document.getElementById('courses-grid');
+  grid.innerHTML = '<div class="skeleton" style="height:200px;"></div><div class="skeleton" style="height:200px;"></div><div class="skeleton" style="height:200px;"></div>';
+  try {
+    const params = new URLSearchParams();
+    const search = document.getElementById('search').value;
+    if (search) params.set('search', search);
+    if (selectedCategory) params.set('category', selectedCategory);
+    if (selectedLevel) params.set('level', selectedLevel);
+    const courses = await api(`/api/courses?${params}`);
+    if (!courses.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">📚</div><h3>Nenhum curso encontrado</h3><p>Tente ajustar os filtros ou buscar por outro termo.</p></div>`;
+      return;
+    }
+    grid.innerHTML = courses.map(c => `
+      <a href="/course.html?slug=${c.slug}" class="card course-card" style="text-decoration:none;color:inherit;">
+        <div class="card-body">
+          <div class="course-meta">
+            ${courseLevelBadge(c.level)}
+            <span class="badge badge-primary">${escapeHtml(c.category_name || '')}</span>
+          </div>
+          <h3>${escapeHtml(c.title)}</h3>
+          <p>${escapeHtml(c.short_description || c.description?.slice(0,120) || '')}</p>
+        </div>
+        <div class="card-footer">
+          <span>👨‍🏫 ${escapeHtml(c.teacher_name || '')}</span>
+          <span>${c.enrollment_count || 0} alunos · ${c.module_count || 0} módulos</span>
+        </div>
+      </a>
+    `).join('');
+  } catch (err) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">⚠️</div><h3>Erro ao carregar cursos</h3><p>${err.message}</p></div>`;
+  }
+}
+checkAuth();
+loadCategories();
+loadCourses();
+</script>
+</body>
+</html>

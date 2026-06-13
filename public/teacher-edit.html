@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Editar Curso - Discere</title><link rel="stylesheet" href="/css/style.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <div class="sidebar-trigger"></div>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="header-bar"><div><h1>Editar Curso</h1><p>Gerencie módulos e aulas</p></div></div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:300px;">
+        <div class="card" style="margin-bottom:24px;">
+          <form id="course-form">
+            <div class="form-group"><label>Título</label><input type="text" class="input" id="title" required></div>
+            <div class="form-group"><label>Slug</label><input type="text" class="input" id="slug" required></div>
+            <div class="form-group"><label>Categoria</label><select class="input" id="category_id" required></select></div>
+            <div class="form-group"><label>Nível</label><select class="input" id="level"><option value="BEGINNER">Iniciante</option><option value="INTERMEDIATE">Intermediário</option><option value="ADVANCED">Avançado</option></select></div>
+            <div class="form-group"><label>Descrição Curta</label><input type="text" class="input" id="short_description"></div>
+            <div class="form-group"><label>Descrição Completa</label><textarea class="input" id="description" rows="5"></textarea></div>
+            <div class="form-group"><label><input type="checkbox" id="published"> Publicado</label></div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </form>
+        </div>
+        <h2 class="section-title">Módulos</h2>
+        <div id="modules-list"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addModule()" style="margin-top:12px;">+ Adicionar Módulo</button>
+      </div>
+      <div style="width:300px;flex-shrink:0;">
+        <div class="card" id="summary-card"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+let courseId = null;
+let courseData = null;
+async function loadCourse() {
+  const params = new URLSearchParams(window.location.search);
+  courseId = params.get('id');
+  if (!courseId) { window.location.href = '/teacher-dashboard.html'; return; }
+  await checkAuth();
+  if (!currentUser || currentUser.role !== 'TEACHER') { window.location.href = '/login.html'; return; }
+  try { courseData = await api(`/api/courses/manage/${courseId}`); renderCourse(); }
+  catch (err) { toast(err.message, 'error'); }
+}
+async function loadCategories() {
+  try {
+    const cats = await api('/api/categories');
+    document.getElementById('category_id').innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    if (courseData) document.getElementById('category_id').value = courseData.category_id;
+  } catch {}
+}
+function renderCourse() {
+  document.getElementById('title').value = courseData.title || '';
+  document.getElementById('slug').value = courseData.slug || '';
+  document.getElementById('level').value = courseData.level || 'BEGINNER';
+  document.getElementById('short_description').value = courseData.short_description || '';
+  document.getElementById('description').value = courseData.description || '';
+  document.getElementById('published').checked = !!courseData.published;
+  loadCategories();
+  renderModules();
+  updateSummary();
+}
+function renderModules() {
+  const container = document.getElementById('modules-list');
+  if (!courseData.modules?.length) {
+    container.innerHTML = '<p style="color:var(--fg-muted);font-size:0.9rem;">Nenhum módulo ainda. Adicione o primeiro!</p>';
+    return;
+  }
+  container.innerHTML = courseData.modules.map((mod, mi) => `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong>${mi + 1}. ${escapeHtml(mod.title)}</strong>
+        <button class="btn btn-sm btn-danger" onclick="deleteModule('${mod.id}', ${mi})">Excluir</button>
+      </div>
+      <div style="font-size:0.85rem;color:var(--fg-muted);margin-bottom:8px;">${mod.lessons?.length || 0} aulas</div>
+      ${mod.lessons?.map((les, li) => `
+        <div style="padding:8px 12px;background:var(--bg);border-radius:4px;margin-bottom:4px;font-size:0.85rem;">
+          ${mi + 1}.${li + 1} ${escapeHtml(les.title)}
+        </div>
+      `).join('') || ''}
+    </div>
+  `).join('');
+}
+function updateSummary() {
+  const totalLessons = courseData.modules?.reduce((s, m) => s + (m.lessons?.length || 0), 0) || 0;
+  document.getElementById('summary-card').innerHTML = `
+    <h3 style="margin-bottom:12px;">Resumo</h3>
+    <div style="font-size:0.9rem;color:var(--fg-muted);">
+      <div>Status: ${courseData.published ? '✅ Publicado' : '📝 Rascunho'}</div>
+      <div>Módulos: ${courseData.modules?.length || 0}</div>
+      <div>Aulas: ${totalLessons}</div>
+    </div>`;
+}
+document.getElementById('course-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await api('/api/courses/update', { method: 'PUT', body: {
+      id: courseId, title: document.getElementById('title').value, slug: document.getElementById('slug').value,
+      category_id: document.getElementById('category_id').value, level: document.getElementById('level').value,
+      short_description: document.getElementById('short_description').value, description: document.getElementById('description').value,
+      published: document.getElementById('published').checked
+    }});
+    toast('Curso salvo!', 'success');
+    loadCourse();
+  } catch (err) { toast(err.message, 'error'); }
+});
+async function addModule() {
+  const title = prompt('Nome do módulo:');
+  if (!title) return;
+  try { await api('/api/courses/modules', { method: 'POST', body: { course_id: courseId, title } }); toast('Módulo criado!', 'success'); loadCourse(); }
+  catch (err) { toast(err.message, 'error'); }
+}
+async function deleteModule(id) {
+  if (!confirm('Excluir este módulo?')) return;
+  try { await api(`/api/courses/modules/${id}`, { method: 'DELETE' }); toast('Módulo excluído', 'success'); loadCourse(); }
+  catch (err) { toast(err.message, 'error'); }
+}
+loadCourse();
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Dashboard - Admin Discere</title><link rel="stylesheet" href="/css/admin.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Discere Admin</div>
+    <nav class="sidebar-nav">
+      <a href="/" class="active">📊 Dashboard</a>
+      <a href="/users.html">👥 Usuários</a>
+      <a href="/courses.html">📚 Cursos</a>
+      <a href="/categories.html">🏷️ Categorias</a>
+      <a href="/badges.html">🏆 Badges</a>
+      <a href="/settings.html">⚙️ Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-info" id="admin-info"></div>
+      <button onclick="logout()">🚪 Sair</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="header-bar">
+      <div>
+        <h1>Dashboard</h1>
+        <p>Visão geral da plataforma</p>
+      </div>
+    </div>
+    <div class="stat-grid" id="stats-grid"></div>
+    <h2 class="section-title">Usuários Recentes</h2>
+    <div class="table-wrapper" id="recent-users" style="margin-bottom:32px;"></div>
+    <h2 class="section-title">Cursos Recentes</h2>
+    <div class="table-wrapper" id="recent-courses"></div>
+  </main>
+</div>
+<script src="/js/admin.js"></script>
+<script>
+async function loadDashboard() {
+  await checkAuth();
+  document.getElementById('admin-info').textContent = `👤 ${adminUser.name}`;
+
+  const stats = await api('/api/stats');
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="card stat-card"><div class="stat-value">${stats.total_users}</div><div class="stat-label">Usuários</div></div>
+    <div class="card stat-card"><div class="stat-value">${stats.total_students}</div><div class="stat-label">Alunos</div></div>
+    <div class="card stat-card"><div class="stat-value">${stats.total_teachers}</div><div class="stat-label">Professores</div></div>
+    <div class="card stat-card"><div class="stat-value">${stats.total_courses}</div><div class="stat-label">Cursos</div></div>
+    <div class="card stat-card"><div class="stat-value">${stats.published_courses}</div><div class="stat-label">Publicados</div></div>
+    <div class="card stat-card"><div class="stat-value">${stats.total_enrollments}</div><div class="stat-label">Matrículas</div></div>
+    <div class="card stat-card"><div class="stat-value">${stats.total_categories}</div><div class="stat-label">Categorias</div></div>
+    <div class="card stat-card"><div class="stat-value">${stats.total_certificates}</div><div class="stat-label">Certificados</div></div>
+  `;
+
+  document.getElementById('recent-users').innerHTML = stats.recent_users?.length ? `
+    <table>
+      <thead><tr><th>Nome</th><th>Email</th><th>Tipo</th><th>Data</th></tr></thead>
+      <tbody>${stats.recent_users.map(u => `
+        <tr><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td><td><span class="badge badge-primary">${u.role}</span></td><td>${formatDate(u.created_at)}</td></tr>
+      `).join('')}</tbody>
+    </table>
+  ` : '<div class="empty-state">Nenhum usuário</div>';
+
+  document.getElementById('recent-courses').innerHTML = stats.recent_courses?.length ? `
+    <table>
+      <thead><tr><th>Título</th><th>Professor</th><th>Data</th></tr></thead>
+      <tbody>${stats.recent_courses.map(c => `
+        <tr><td>${escapeHtml(c.title)}</td><td>${escapeHtml(c.teacher_name || '-')}</td><td>${formatDate(c.created_at)}</td></tr>
+      `).join('')}</tbody>
+    </table>
+  ` : '<div class="empty-state">Nenhum curso</div>';
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
